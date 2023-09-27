@@ -19,20 +19,22 @@ warnings.filterwarnings("ignore")
 
 device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 idx_to_labels = np.load('E:\\dataset\\farmerdata\\idx_to_labels.npy', allow_pickle=True).item()
-model = torch.load('models/best-0.900.pth')
+model = torch.load('checkpoint/best-0.892.pth')
+# model = torch.load('models/best-0.900.pth')
 model = model.eval().to(device)
-test_transform = transforms.Compose([transforms.Resize(224),
-                                     # transforms.CenterCrop(224),
+test_transform = transforms.Compose([transforms.Resize(256),
+                                     transforms.CenterCrop(224),
+                                     transforms.Grayscale(num_output_channels=3),
                                      transforms.ToTensor(),
                                      # transforms.Lambda(lambda x: x.repeat(3, 1, 1)),
                                      transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])])
 images_folder_path = 'E:\\dataset\\farmerdata\\test'
 images_path = os.listdir(images_folder_path)
-n = 1
+n = 3
 columns = ['name', 'label']
 df_result = pd.DataFrame(columns=columns)
 # test_result = {}
-'''
+
 for image_path in tqdm(images_path):
     # test_result['name'] = image_path.strip('.jpg')
     # img_name = image_path.strip('.jpg')
@@ -46,8 +48,15 @@ for image_path in tqdm(images_path):
     top_n = torch.topk(pred_softmax, n)
     pred_ids = top_n[1].cpu().detach().numpy().squeeze()
     pred_ids = pred_ids.tolist()
+    # label = idx_to_labels[pred_ids]
     # test_result['label'] = pred_ids
-    df_result = df_result.append({'name': img_name, 'label': pred_ids}, ignore_index=True)
+    # df_result = df_result.append({'name': img_name, 'label': label}, ignore_index=True)
+    confs = top_n[0].cpu().detach().numpy().squeeze()  # 解析出置信度
+    for i in range(n):
+        class_name = idx_to_labels[pred_ids[i]]  # 获取类别名称
+        confidence = confs[i] * 100  # 获取置信度
+        text = '{:<15} {:>.4f}%'.format(class_name, confidence)
+        print(text)
 '''
 for image_path in tqdm(images_path):
     # test_result['name'] = image_path.strip('.jpg')
@@ -68,5 +77,7 @@ for image_path in tqdm(images_path):
     pred_ids = pred_ids.tolist()
     # test_result['label'] = pred_ids
     df_result = df_result.append({'name': img_name, 'label': pred_ids}, ignore_index=True)
+'''
 
-df_result.to_csv('submit.csv', index=False)
+
+# df_result.to_csv('submit.csv', index=False)
